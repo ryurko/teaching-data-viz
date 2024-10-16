@@ -28,6 +28,10 @@ table(main_survey_results$type)
 
 # How many schools have courses? ------------------------------------------
 
+table(main_survey_results$did_it_include_any_class)
+# FALSE  TRUE 
+#    41    94 
+
 table("Type" = main_survey_results$type,
       "Include a class?" = main_survey_results$did_it_include_any_class)
 #           Include a class?
@@ -75,8 +79,8 @@ course_level_info |>
                  breaks = seq(0, 16, by = 1),
                  color = "white", fill = "darkblue") +
   theme_light() +
-  labs(x = "Number of identified data visualization classes",
-       y = "Number of universities / colleges")
+  labs(x = "Number of identified data visualization classes taught within a university/college",
+       y = "Number of universities/colleges")
 
 course_level_info |>
   group_by(university) |>
