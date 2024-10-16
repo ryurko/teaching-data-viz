@@ -25,25 +25,29 @@ head(raw_survey_sheets$Universities)
 # Clean names and save single csv -----------------------------------------
 
 # First separate and clean the column names, then add label for file type:
-univ_survey <- raw_survey_sheets$Universities %>%
-  janitor::clean_names() %>%
-  mutate(type = "university") %>%
+univ_survey <- raw_survey_sheets$Universities |>
+  janitor::clean_names() |>
+  mutate(type = "university") |>
   # Drop the missing university name rows:
   filter(!is.na(university),
          # And drop the info for Monica row:
-         str_detect(university, "for Monica", negate = TRUE))
+         str_detect(university, "for Monica", negate = TRUE)) |>
+  # Drop the notes columns:
+  dplyr::select(-contains("notes"))
 
 # Repeat for liberal arts:
-lib_arts_survey <- raw_survey_sheets$`Liberal Arts Colleges` %>%
-  janitor::clean_names() %>%
-  mutate(type = "liberal_arts") %>%
+lib_arts_survey <- raw_survey_sheets$`Liberal Arts Colleges` |>
+  janitor::clean_names() |>
+  mutate(type = "liberal_arts") |>
   filter(!is.na(university),
-         str_detect(university, "for Monica", negate = TRUE)) 
+         str_detect(university, "for Monica", negate = TRUE)) |>
+  # Drop the notes columns:
+  dplyr::select(-contains("notes"))
 
 # Stack and save:
-clean_survey_file <- univ_survey %>%
+clean_survey_file <- univ_survey |>
   bind_rows(lib_arts_survey)
 
-write_csv(clean_survey_file, "data/processed/survey_results.csv")
+write_csv(clean_survey_file, "data/processed/data-viz-survey.csv")
 
 
