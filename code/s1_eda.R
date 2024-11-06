@@ -57,6 +57,19 @@ nrow(course_level_info) == (nrow(main_survey_results) * 15)
 
 # Successfully pivoted using the above code
 
+# histogram with 0s for schools
+course_count_hist <- course_level_info |>
+  group_by(university) |>
+  summarize(n_courses = length(which(!is.na(name)))) |>
+  ggplot(aes(x = n_courses)) +
+  geom_histogram(binwidth = 1, center = 0, closed = "left",
+                 color = "white", fill = "darkblue") +
+  theme_light() +
+  labs(x = "Number of identified data visualization classes taught within a school",
+       y = "Number of schools")
+cowplot::save_plot("figs/hist_n_courses.pdf",
+                   course_count_hist, ncol = 1, nrow = 1)
+
 # Remove missing rows based on name:
 course_level_info <- course_level_info |>
   filter(!is.na(name))
@@ -69,18 +82,6 @@ length(unique(course_level_info$university))
 # [1] 0.6103896
 
 # Basic exploration of class level data -----------------------------------
-
-# Number of classes per school (excluding schools without data viz)
-course_level_info |>
-  group_by(university) |>
-  count() |>
-  ggplot(aes(x = n)) +
-  geom_histogram(binwidth = 1, closed = "left",
-                 breaks = seq(0, 16, by = 1),
-                 color = "white", fill = "darkblue") +
-  theme_light() +
-  labs(x = "Number of identified data visualization classes taught within a university/college",
-       y = "Number of universities/colleges")
 
 course_level_info |>
   group_by(university) |>
@@ -249,6 +250,60 @@ course_level_info |>
 # Yup... majority do not come from stats or data science depts, and that's 
 # probably being generous given the stat/data tag
 
+# Make a combined version:
+course_level_info |>
+  mutate(is_stat_ds = pmax(is_stats, is_ds)) |>
+  group_by(is_stat_ds) |> 
+  summarize(n_classes = n(), .groups = "drop") |>
+  mutate(total_classes = sum(n_classes)) |>
+  ungroup() |>
+  mutate(frac_classes = n_classes / total_classes)
+# # A tibble: 2 × 4
+#             is_stat_ds n_classes total_classes frac_classes
+#                 1 <dbl>     <int>         <int>        <dbl>
+#           1          0       227           270        0.841
+#           2          1        43           270        0.159
+
+course_level_info |>
+  mutate(is_stat_ds = pmax(is_stats, is_ds)) |>
+  group_by(level, is_stat_ds) |>  
+  summarize(n_classes = n(),
+            .groups = "drop") |>
+  group_by(level) |>
+  mutate(total_classes = sum(n_classes)) |>
+  ungroup() |>
+  mutate(frac_classes = n_classes / total_classes)
+# # A tibble: 6 × 5
+#     level     is_stat_ds n_classes total_classes frac_classes
+#     <chr>          <dbl>     <int>         <int>        <dbl>
+#   1 both               0        56            63        0.889
+#   2 both               1         7            63        0.111
+#   3 grad               0        85           101        0.842
+#   4 grad               1        16           101        0.158
+#   5 undergrad          0        86           106        0.811
+#   6 undergrad          1        20           106        0.189
+
+
+dept_level_bars <- course_level_info |>
+  mutate(is_stat_ds = pmax(is_stats, is_ds)) |>
+  group_by(level, is_stat_ds) |>
+  summarize(n_classes = n(),
+            .groups = "drop") |>
+  mutate(level = fct_relevel(level, "undergrad", "grad", "both"),
+         level = fct_recode(level, Both = "both", 
+                            `Undergraduate-only` = "undergrad",
+                            `Graduate-only` = "grad")) |>
+  ggplot(aes(x = level, y = n_classes, fill = as.factor(is_stat_ds))) +
+  geom_bar(stat = "identity", position = "stack") +
+  ggthemes::scale_fill_colorblind(labels = c("No", "Yes")) +
+  labs(x = "Student-level", y = "Number of classes",
+       fill = "Taught by statistics and/or data science department?") +
+  theme_light() +
+  theme(legend.position = "bottom")
+cowplot::save_plot("figs/dept_level_bars.pdf",
+                   dept_level_bars, ncol = 1, nrow = 1)
+
+
 # Frequency of topics we discuss ------------------------------------------
 
 # How many classes had topics?
@@ -257,6 +312,54 @@ course_level_info |>
   nrow()
 # [1] 142 - okay so a good number
 
+# Figure out the topics to search for:
+unique(str_split(paste0(course_level_info$topic_list, collapse = ", "), ", ")[[1]])
+# [1] "None"                                    "Interactive Graphics"                   
+# [3] "Networks"                                "Spatial Data"                           
+# [5] "NA"                                      "High Dimensional"                       
+# [7] "Statistical Modeling"                    "Hypothesis Testing"                     
+# [9] "Time Series"                             "Text Data"                              
+# [11] "Statistical Modeling (Regression)"       "Clustering"                             
+# [13] "Text Analysis"                           "Hypothesis Testing/Confidence Intervals"
+# [15] " Interactive Graphics"                   "Spatial data"                           
+# [17] "Confidence Intervals"      
+
+# First look up all topics:
+all_topics <- c("interactive graphics", "networks", "spatial data",
+                "high dimensional", "time series", "text data", "clustering",
+                "text analysis",
+                "hypothesis testing", "confidence intervals",
+                "statistical modeling")
+
+topic_counts <- map_dfr(all_topics,
+                        function(topic) {
+                          topic_count <- course_level_info |>
+                            mutate(topic_list = tolower(topic_list)) |>
+                            filter(str_detect(topic_list, str_c(topic))) |>
+                            nrow()
+                          tibble(class_topic = topic,
+                                 n_classes = topic_count)
+                        }) |>
+  # alter text analysis to be text data:
+  mutate(class_topic = ifelse(class_topic == "text analysis",
+                              "text data", class_topic)) |>
+  group_by(class_topic) |>
+  summarize(n_classes = sum(n_classes),
+            .groups = "drop")
+  
+
+# Make a bar chart of these topic counts:
+topic_count_bars <- topic_counts |>
+  mutate(class_topic = fct_reorder(class_topic, n_classes)) |>
+  ggplot(aes(x = class_topic, y = n_classes)) +
+  geom_bar(stat = "identity",
+           fill = "darkblue", color = "white") +
+  coord_flip() +
+  theme_light() +
+  labs(x = "Topic",
+       y = "Number of courses covering topic")
+cowplot::save_plot("figs/topic_count_bars.pdf",
+                   topic_count_bars, ncol = 1, nrow = 1)
 
 # Set-up a vector of topics 
 stat_topics <- c("hypothesis testing", "confidence intervals",
