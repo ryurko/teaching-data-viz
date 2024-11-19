@@ -6,7 +6,7 @@ library(tidyverse)
 
 # Load the survey results -------------------------------------------------
 
-clean_survey_file <- read_csv("data/processed/data-viz-survey.csv")
+clean_survey_file <- read_csv("/Users/zjbranson/Documents/CMU/Research/Statistical Graphics Paper/teaching-data-viz-main/data/processed/survey_results.csv")
 
 table(clean_survey_file$type)
 # liberal_arts   university 
@@ -126,7 +126,7 @@ length(unique(course_level_info$dept))
 # [1] 163
 
 # Okay that's way too many to initially look at... what are the types of depts
-# that contain statistics in them?
+# that contain "stat" or "data" in them?
 
 course_level_info <- course_level_info |>
   mutate(is_stats = as.numeric(str_detect(tolower(dept), "stat")))
@@ -143,20 +143,22 @@ course_level_info |>
 # [7] "Statistics and Operations Research"                              
 # [8] "Information Technology, Statistics" 
 
-# Repeat for Data Science
+# Repeat for "data"
 course_level_info <- course_level_info |>
-  mutate(is_ds = as.numeric(str_detect(tolower(dept), "data sci")))
+  mutate(is_ds = as.numeric(str_detect(tolower(dept), "data")))
 course_level_info |>
   filter(is_ds == 1) |>
   pull(dept) |>
   unique()
-# [1] "Data Science Institute"                        "Data Science"                                 
-# [3] "Statistics and Data Science"                   "Data Sciece"                                  
-# [5] "Data Science and Analytics"                    "Data Science (Public Policy)"                 
-# [7] "Environmental Data Science"                    "Data Science and Engineering"                 
-# [9] "Applied Data Science"                          "Computer Science, Data Science"               
-# [11] "Journalism and Media Management, Data Science" "Data Science, Informatics"                    
-# [13] "Data Science, Information Systems" 
+#  [1] "Data Science Institute"                        "Data Science"                                 
+#  [3] "Statistics and Data Science"                   "Data Analytics"                               
+#  [5] "Data Sciece"                                   "Data Science and Analytics"                   
+#  [7] "Data Science (Public Policy)"                  "Data Analytics for Science"                   
+#  [9] "Applied Data Analytics and Visualization"      "Environmental Data Science"                   
+# [11] "Data Science and Engineering"                  "Applied Data Science"                         
+# [13] "Computer Science, Data Science"                "Journalism and Media Management, Data Science"
+# [15] "Data Analytics & Visualization"                "Data Science, Informatics"                    
+# [17] "Data Science, Information Systems"             "Data for Political Research"      
 
 # Spot a mispelling there...
 
@@ -171,10 +173,10 @@ table(course_level_info$is_stats) / nrow(course_level_info)
 # For data science?
 table(course_level_info$is_ds)
 #   0   1 
-# 243  27 
+# 236  34 
 table(course_level_info$is_ds) / nrow(course_level_info)
 #   0   1 
-# 0.9 0.1 
+# 0.8740741 0.1259259  
 
 # Split by level:
 course_level_info |>
@@ -212,7 +214,6 @@ course_level_info |>
   theme_light() +
   theme(legend.position = "bottom")
 
-
 course_level_info |>
   group_by(level, is_ds) |>
   summarize(n_classes = n(),
@@ -224,12 +225,12 @@ course_level_info |>
 # # A tibble: 6 × 5
 #     level     is_ds n_classes total_classes frac_classes
 #     <chr>     <dbl>     <int>         <int>        <dbl>
-#   1 both          0        57            63       0.905 
-#   2 both          1         6            63       0.0952
-#   3 grad          0        90           101       0.891 
-#   4 grad          1        11           101       0.109 
-#   5 undergrad     0        96           106       0.906 
-#   6 undergrad     1        10           106       0.0943
+# 1 both          0        56            63        0.889
+# 2 both          1         7            63        0.111
+# 3 grad          0        87           101        0.861
+# 4 grad          1        14           101        0.139
+# 5 undergrad     0        93           106        0.877
+# 6 undergrad     1        13           106        0.123
 
 course_level_info |>
   group_by(level, is_ds) |>
@@ -261,8 +262,8 @@ course_level_info |>
 # # A tibble: 2 × 4
 #             is_stat_ds n_classes total_classes frac_classes
 #                 1 <dbl>     <int>         <int>        <dbl>
-#           1          0       227           270        0.841
-#           2          1        43           270        0.159
+#            1          0       220           270        0.815
+#            2          1        50           270        0.185
 
 course_level_info |>
   mutate(is_stat_ds = pmax(is_stats, is_ds)) |>
@@ -276,13 +277,12 @@ course_level_info |>
 # # A tibble: 6 × 5
 #     level     is_stat_ds n_classes total_classes frac_classes
 #     <chr>          <dbl>     <int>         <int>        <dbl>
-#   1 both               0        56            63        0.889
-#   2 both               1         7            63        0.111
-#   3 grad               0        85           101        0.842
-#   4 grad               1        16           101        0.158
-#   5 undergrad          0        86           106        0.811
-#   6 undergrad          1        20           106        0.189
-
+# 1 both               0        55            63        0.873
+# 2 both               1         8            63        0.127
+# 3 grad               0        82           101        0.812
+# 4 grad               1        19           101        0.188
+# 5 undergrad          0        83           106        0.783
+# 6 undergrad          1        23           106        0.217
 
 dept_level_bars <- course_level_info |>
   mutate(is_stat_ds = pmax(is_stats, is_ds)) |>
@@ -300,6 +300,7 @@ dept_level_bars <- course_level_info |>
        fill = "Taught by statistics and/or data science department?") +
   theme_light() +
   theme(legend.position = "bottom")
+dept_level_bars
 cowplot::save_plot("figs/dept_level_bars.pdf",
                    dept_level_bars, ncol = 1, nrow = 1)
 
@@ -311,6 +312,12 @@ course_level_info |>
   filter(topic_list != "None", !is.na(topic_list)) |>
   nrow()
 # [1] 142 - okay so a good number
+
+# How many classes didn't have available topics?
+sum(is.na(course_level_info$topic_list))
+# [1] 14
+mean(is.na(course_level_info$topic_list))
+# [1] 0.05185185
 
 # Figure out the topics to search for:
 unique(str_split(paste0(course_level_info$topic_list, collapse = ", "), ", ")[[1]])
@@ -329,7 +336,8 @@ all_topics <- c("interactive graphics", "networks", "spatial data",
                 "high dimensional", "time series", "text data", "clustering",
                 "text analysis",
                 "hypothesis testing", "confidence intervals",
-                "statistical modeling")
+                "statistical modeling",
+                "none")
 
 topic_counts <- map_dfr(all_topics,
                         function(topic) {
@@ -346,7 +354,6 @@ topic_counts <- map_dfr(all_topics,
   group_by(class_topic) |>
   summarize(n_classes = sum(n_classes),
             .groups = "drop")
-  
 
 # Make a bar chart of these topic counts:
 topic_count_bars <- topic_counts |>
@@ -358,8 +365,79 @@ topic_count_bars <- topic_counts |>
   theme_light() +
   labs(x = "Topic",
        y = "Number of courses covering topic")
+topic_count_bars
 cowplot::save_plot("figs/topic_count_bars.pdf",
                    topic_count_bars, ncol = 1, nrow = 1)
+
+# Number and proportion of courses that cover each topic
+topic_counts
+#    class_topic          n_classes
+#    <chr>                    <int>
+#  1 clustering                  10
+#  2 confidence intervals         2
+#  3 high dimensional            21
+#  4 hypothesis testing           4
+#  5 interactive graphics       105
+#  6 networks                    32
+#  7 none                       114
+#  8 spatial data                51
+#  9 statistical modeling         7
+# 10 text data                   18
+# 11 time series                 26
+
+# Understanding *how many topics* each course teaches:
+#create an indicator for each topic
+topicChecks = course_level_info %>% reframe(
+  clustering = as.numeric(grepl("clustering", tolower(topic_list))),
+  CIs = as.numeric(grepl("confidence intervals", tolower(topic_list))),
+  highDim = as.numeric(grepl("high dimensional", tolower(topic_list))),
+  testing = as.numeric(grepl("hypothesis testing", tolower(topic_list))),
+  interactive = as.numeric(grepl("interactive graphics", tolower(topic_list))),
+  networks = as.numeric(grepl("networks", tolower(topic_list))),
+  spatial = as.numeric(grepl("spatial data", tolower(topic_list))),
+  modeling = as.numeric(grepl("statistical modeling", tolower(topic_list))),
+  text = as.numeric(grepl("text", tolower(topic_list))),
+  time = as.numeric(grepl("time series", tolower(topic_list)))
+  )
+#count total number of topics
+course_level_info$numTopics = rowSums(topicChecks)
+#however, if topic_list is NA, change numTopics to NA
+course_level_info$numTopics = ifelse(
+  is.na(course_level_info$topic_list), NA,
+  course_level_info$numTopics)
+
+# histogram of number of topics
+topic_count_hist <- course_level_info |>
+  ggplot(aes(x = numTopics)) +
+  geom_histogram(binwidth = 1, center = 0, closed = "left",
+                 color = "white", fill = "darkblue") +
+  theme_light() +
+  labs(x = "Number of topics taught",
+       y = "Number of courses") +
+  scale_x_continuous(breaks = 0:10)
+topic_count_hist
+
+#Proportion of courses that teach each number of topics:
+prop.table(table(course_level_info$numTopics))
+#How many (and what proportion) teach at most 2 topics?
+sum(course_level_info$numTopics <= 2, na.rm = TRUE)
+mean(course_level_info$numTopics <= 2, na.rm = TRUE)
+
+# More closely examining which courses
+# did not cover any of the topics:
+courses_noTopics = subset(course_level_info, topic_list == "None",
+  select = c(ame, dept))
+print(courses_noTopics, n = 114)
+
+# More closely examining which courses
+# covered interactive graphics:
+print(subset(course_level_info[which(topicChecks$interactive == 1),],
+  select = c(name, dept)), n = 105)
+
+# More closely examining which courses
+# covered spatial data:
+print(subset(course_level_info[which(topicChecks$spatial == 1),],
+  select = c(name, dept)), n = 105)
 
 # Set-up a vector of topics 
 stat_topics <- c("hypothesis testing", "confidence intervals",
