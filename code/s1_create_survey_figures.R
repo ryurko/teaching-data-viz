@@ -4,7 +4,7 @@ library(tidyverse)
 
 # Load the survey results -------------------------------------------------
 
-clean_survey_file <- read_csv("/Users/zjbranson/Documents/CMU/Research/Statistical Graphics Paper/teaching-data-viz-main/data/processed/survey_results.csv")
+clean_survey_file <- read_csv("data/processed/survey_results.csv")
 
 table(clean_survey_file$type)
 # liberal_arts   university 
