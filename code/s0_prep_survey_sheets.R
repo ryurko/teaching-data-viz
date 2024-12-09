@@ -19,8 +19,6 @@ raw_survey_sheets <- read_excel_sheets("data/DataVisualizationClassSurvey.xlsx")
 
 # Inspect the sheets
 head(raw_survey_sheets$Universities)
-# Good news - the check marks used in the file are automatically converted to boolean
-
 
 # Clean names and save single csv -----------------------------------------
 
