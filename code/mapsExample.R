@@ -1,15 +1,18 @@
 
+#This example demonstrates how to run a visual
+#randomization test with areal map data.
 
 library(tidyverse)
 library(ggmap)
 
-#data from acs:
+#We'll consider the ACS data considered in the paper:
 acs = read.csv("https://raw.githubusercontent.com/zjbranson/315Fall2022/main/acs2015_county_data.csv")
 
 #First we get border information for all states
 state.data = map_data("state")
 
-#Now we'll filter out Alaska, Hawaii, and Puerto Rico from the acs data
+#Now we'll filter out Alaska, Hawaii, and Puerto Rico
+#from the acs data (just for ease of visualization)
 acs = subset(acs, State != "Alaska" & State != "Hawaii" & State != "Puerto Rico")
 
 #Compute the weighted mean across counties:
@@ -37,12 +40,12 @@ realMap = ggplot(acs.stateWeightedMean.merged) +
   coord_map("polyconic") + 
   labs(title = "",
        fill = "Unemployment Rate (%)")
+#Thus, this is the real map from Figure 7 in the paper:
 realMap
 
-#It'll be helpful to write a function that automatically
-#makes a ggplot for us.
-#This is literally the same code we used to generate the
-#original areal map above, but for any dataset called "data".
+#Now we'll generate many randomized maps.
+#To do this, we'll use a function to create a map
+#for a given (possibly shuffled) dataset.
 getStateMap.unemp = function(data){
   plot = ggplot(data) +
   geom_polygon(aes(x = long, y = lat, group = group, fill = meanUnemployment), 
@@ -58,7 +61,8 @@ getStateMap.unemp = function(data){
   return(plot)
 }
 
-#Now we're going to permute (i.e., "shuffle") the outcomes a few times.
+#Now we're going to permute (i.e., "shuffle")
+#the outcomes a few times.
 #number of randomizations/permutations/shuffles:
 rands = 25
 
@@ -77,6 +81,7 @@ for(r in 1:rands){
 plotList[[sample(1:rands, size = 1)]] = getStateMap.unemp(acs.stateWeightedMean.merged)
 
 #plot all the plots together
+#(this creates Figure 7 in the paper)
 #first, grab the legend from the real map
 library(cowplot)
 legend = get_plot_component(realMap, 'guide-box-bottom', return_all = TRUE)
@@ -94,5 +99,6 @@ grid.arrange(
   vp=viewport(width=1.05, height=1.05, clip = TRUE),
   layout_matrix = rbind(1:5, 6:10, 11:15, 16:20, 21:25,
     c(26,26,26,26,26)))
-
+#We can see that the real map
+#is on the far-right of the second row.
 

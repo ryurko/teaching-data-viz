@@ -1,7 +1,7 @@
-##Zach Branson
 
-#From a past homework assignment in 36-315, we'll
-#consider the spotify dataset:
+#This example considers visualizing PCA.
+
+#We'll consider the spotify dataset discussed in the paper:
 spotify = read.csv("https://raw.githubusercontent.com/zjbranson/315Fall2022/main/spotify.csv")
 
 #for ease of display, change "duration_ms" to just "duration"
@@ -14,10 +14,10 @@ spotify.subset = subset(spotify, select = -c(year, decades))
 #now run PCA
 spotify.pca = prcomp(spotify.subset,
 	center = TRUE, scale. = TRUE)
-summary(spotify.pca)
 
 #now make a biplot on the first two principal components
 #(note that scale = 0 displays the actual principal components)
+#This creates Figure 9a in the paper.
 library(ggbiplot)
 ggbiplot(spotify.pca,
 	scale = 0,
@@ -33,6 +33,7 @@ ggbiplot(spotify.pca,
 		y = "Second Principal Component (18.8% Variance Explained)")
 
 #elbow plot
+#(this creates Figure 9b in the paper)
 ggscreeplot(spotify.pca) + 
 	labs(x = "Principal Component Number",
 		y = "Variance Explained") +
@@ -47,6 +48,7 @@ library(knitr)
 #get the "rotation" from PCA:
 rotation.pca = as.matrix(spotify.pca$rotation)
 
+#This displays Table 4 in the paper
 kable(round(rotation.pca[
 	c("acousticness", "danceability", "duration",
 		"energy", "instrumentalness", "liveness",
