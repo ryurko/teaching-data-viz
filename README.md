@@ -10,6 +10,10 @@ The code folder is organized as follows:
 
 + `barplotExample.R` replicates Figure 5
 
++ `densityExample.R` replicates Figure 6
+
 + `mapsExample.R` replicates Figure 7
 
-+ `pcaExample.R` replicates Table 4 and Figure 9
++ `linIntExample.R` replicates Figure 8 and Table 3
+
++ `pcaExample.R` replicates Figure 9 and Table 4
