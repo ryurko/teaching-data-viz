@@ -103,5 +103,6 @@ grid.arrange(plot1, plot2, plot3, plot4, legend,
   layout_matrix = rbind(c(1,2),c(3,4),c(5,5)))
 
 #example of R outplot from the fourth plot's model
+#(This creates Table 3 in the paper)
 summary(lm(voter_turnout ~ unemp*female*africanAmerican,
   data = electionData))
