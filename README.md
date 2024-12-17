@@ -18,4 +18,4 @@ The code folder is organized as follows:
 
 + `pcaExample.R` replicates Figure 9 and Table 4
 
-Further details about the survey dataset, and the dataset itself, [can be found here](https://cmustatistics.github.io/data-repository/social/data-viz-survey.html). 
+Further details about the survey dataset, and the dataset itself, can be found in Carnegie Mellon's Statistics and Data Science Repository [here](https://cmustatistics.github.io/data-repository/social/data-viz-survey.html). 
