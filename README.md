@@ -17,3 +17,5 @@ The code folder is organized as follows:
 + `linIntExample.R` replicates Figure 8 and Table 3
 
 + `pcaExample.R` replicates Figure 9 and Table 4
+
+Further details about the survey dataset, and the dataset itself, [can be found here](https://cmustatistics.github.io/data-repository/social/data-viz-survey.html). 
