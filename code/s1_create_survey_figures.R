@@ -4,7 +4,7 @@ library(tidyverse)
 
 # Load the survey results -------------------------------------------------
 
-clean_survey_file <- read_csv("data/processed/survey_results.csv")
+clean_survey_file <- read_csv("/Users/zjbranson/Documents/CMU/Research/Statistical Graphics Paper/Graphs Paper Code/survey_results.csv")
 
 table(clean_survey_file$type)
 # liberal_arts   university 
@@ -237,7 +237,7 @@ topic_counts
 #  3 high dimensional            21
 #  4 hypothesis testing           4
 #  5 interactive graphics       105
-#  6 networks                    32
+#  6 networks                    31
 #  7 none                       114
 #  8 spatial data                51
 #  9 statistical modeling         7
@@ -285,7 +285,7 @@ mean(course_level_info$numTopics <= 2, na.rm = TRUE)
 # More closely examining which courses
 # did not cover any of the topics:
 courses_noTopics = subset(course_level_info, topic_list == "None",
-                          select = c(ame, dept))
+                          select = c(name, dept))
 print(courses_noTopics, n = 114)
 
 # More closely examining which courses

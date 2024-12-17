@@ -46,6 +46,6 @@ lib_arts_survey <- raw_survey_sheets$`Liberal Arts Colleges` |>
 clean_survey_file <- univ_survey |>
   bind_rows(lib_arts_survey)
 
-write_csv(clean_survey_file, "data/processed/data-viz-survey.csv")
+write_csv(clean_survey_file, "data/processed/survey_results.csv")
 
 
