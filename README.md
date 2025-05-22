@@ -2,7 +2,7 @@
 
 This repository contains the data and code used to replicate the analysis and figures in the manuscript _The Landscape of College-level Data Visualization Courses, and the Benefits of Incorporating Statistical Thinking_.
 
-The data folder contains the raw data from the survey (`DataVisualizationClassSurvey.xlsx`) and a processed version of the data that was used for visualizations and summary statistics throughout the paper (`survey_results.csv`).
+The data folder contains the raw data from the survey (`DataVisualizationClassSurvey.xlsx`) and a cleaned version of the data that was used for visualizations and summary statistics throughout the paper (`survey_results.csv`).
 
 The code folder is organized as follows:
 
