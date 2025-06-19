@@ -4,7 +4,7 @@ library(tidyverse)
 
 # Load the survey results -------------------------------------------------
 
-clean_survey_file <- read_csv("/Users/zjbranson/Documents/CMU/Research/Statistical Graphics Paper/Graphs Paper Code/survey_results.csv")
+clean_survey_file <- read_csv("data/processed/survey_results.csv")
 
 table(clean_survey_file$type)
 # liberal_arts   university 
@@ -45,16 +45,18 @@ course_level_info <- main_survey_results |>
                names_to = c("class", ".value"),
                names_pattern = "course_(\\d+)_(.+)")
 
-# Create for number of courses within a school:
+# Create plot for number of courses within a school
+# (This creates Figure 1 in the paper)
 course_count_hist <- course_level_info |>
   group_by(university) |>
   summarize(n_courses = length(which(!is.na(name)))) |>
   ggplot(aes(x = n_courses)) +
   geom_histogram(binwidth = 1, center = 0, closed = "left",
-                 color = "white", fill = "darkblue") +
+                 color = "white", fill = "black") +
   theme_light() +
   labs(x = "Number of identified data visualization classes taught within a school",
-       y = "Number of schools")
+      y = "Number of schools")
+course_count_hist
 cowplot::save_plot("figs/hist_n_courses.pdf",
                    course_count_hist, ncol = 1, nrow = 1)
 
@@ -67,6 +69,12 @@ length(unique(course_level_info$university))
 # [1] 94
 94 / 154
 # [1] 0.6103896
+
+# How many courses have URLs available?
+sum(!is.na(course_level_info$url))
+# [1] 166
+166/270
+# [1] 0.6148148
 
 # Basic exploration of class level data -----------------------------------
 
@@ -106,6 +114,9 @@ table(course_level_info$level)
 length(unique(course_level_info$dept))
 # [1] 163
 
+
+# Now we'll categorize departments based on whether
+# they contain "stat"
 course_level_info <- course_level_info |>
   mutate(is_stats = as.numeric(str_detect(tolower(dept), "stat")))
 course_level_info |>
@@ -155,6 +166,7 @@ table(course_level_info$is_ds) / nrow(course_level_info)
 # 0.8740741 0.1259259  
 
 # Create bar chart display for courses taught by dept and level
+# (This creates Figure 3 in the paper)
 dept_level_bars <- course_level_info |>
   mutate(is_stat_ds = pmax(is_stats, is_ds)) |>
   group_by(level, is_stat_ds) |>
@@ -168,9 +180,9 @@ dept_level_bars <- course_level_info |>
   geom_bar(stat = "identity", position = "stack") +
   ggthemes::scale_fill_colorblind(labels = c("No", "Yes")) +
   labs(x = "Student-level", y = "Number of classes",
-       fill = "Taught by statistics and/or data science department?") +
+      fill = "Taught by statistics and/or data science department?") +
   theme_light() +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom") 
 dept_level_bars
 cowplot::save_plot("figs/dept_level_bars.pdf",
                    dept_level_bars, ncol = 1, nrow = 1)
@@ -215,14 +227,20 @@ topic_counts <- map_dfr(all_topics,
             .groups = "drop")
 
 # Make a bar chart of these topic counts:
+# (This creates Figure 4a in the paper)
 topic_count_bars <- topic_counts |>
   mutate(class_topic = fct_reorder(class_topic, n_classes)) |>
   ggplot(aes(x = class_topic, y = n_classes)) +
   geom_bar(stat = "identity",
-           fill = "darkblue", color = "white") +
+           fill = "black", color = "white") +
   coord_flip() +
+  ylim(0, 114.3) +
   theme_light() +
-  labs(x = "Topic",
+  theme(plot.margin = margin(t = 5.5,
+                             r = 8.5, 
+                             b = 5.5, 
+                             l = 5.5)) +
+  labs(x = "",
        y = "Number of courses covering topic")
 topic_count_bars
 cowplot::save_plot("figs/topic_count_bars.pdf",
@@ -266,21 +284,28 @@ course_level_info$numTopics = ifelse(
   course_level_info$numTopics)
 
 # histogram of number of topics
+# (This creates Figure 4b in the paper)
 topic_count_hist <- course_level_info |>
   ggplot(aes(x = numTopics)) +
   geom_histogram(binwidth = 1, center = 0, closed = "left",
-                 color = "white", fill = "darkblue") +
+                 color = "white", fill = "black") +
   theme_light() +
+  theme(panel.grid.minor.x = element_blank()) +
+  ylim(0, 114.3) +
   labs(x = "Number of topics taught",
        y = "Number of courses") +
   scale_x_continuous(breaks = 0:10)
 topic_count_hist
+cowplot::save_plot("figs/numTopics.pdf",
+                   topic_count_hist, ncol = 1, nrow = 1)
 
 #Proportion of courses that teach each number of topics:
 prop.table(table(course_level_info$numTopics))
-#How many (and what proportion) teach at most 2 topics?
+#How many (and what proportion) teach 2 or fewer topics?
 sum(course_level_info$numTopics <= 2, na.rm = TRUE)
+# [1] 226
 mean(course_level_info$numTopics <= 2, na.rm = TRUE)
+# [1] 0.8828125
 
 # More closely examining which courses
 # did not cover any of the topics:
@@ -356,22 +381,32 @@ lapply(courses_by_topics, function(x) dplyr::select(x, university, dept))
 #   6 University of Minnesota    Information and Decision Science                  
 #   7 Colby College              Statistics  
 
-# Create word clouds of departments, class names, and topics --------------
-
-# Start with departments
+# Create word clouds of departments
 library(tidytext)
+library(SnowballC)
 data(stop_words)
 
+#Among department names, count the number
+#of times each word occurs.
+#When doing this, also remove stop words
+#and perform stemming. 
 course_dept_text <- course_level_info |>
   dplyr::select(university, class, dept) |>
   unnest_tokens(word, dept) |>
   filter(!(word %in% stop_words$word)) |>
   group_by(word) |>
+  mutate(word = wordStem(word)) %>%
   summarize(freq = n(), .groups = "drop")
 
 library(wordcloud)
+#Create a wordcloud of the top words
+#that occur among department names.
+#(This creates Figure 2 in the paper.)
+set.seed(123)
 wordcloud(words = course_dept_text$word,
           freq = course_dept_text$freq, 
           random.order = FALSE,
-          max.words = 100, 
+          max.words = 150, 
+          min.freq = 3,
+          rot.per = 0,
           colors = brewer.pal(8, "Dark2"))

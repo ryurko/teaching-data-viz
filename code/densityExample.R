@@ -4,7 +4,7 @@
 #to generate many different bandwidths.
 
 #We'll consider the spotify dataset discussed in the paper:
-spotify = read.csv("https://raw.githubusercontent.com/zjbranson/315Fall2022/main/spotify.csv")
+spotify = read.csv("data/datasets for examples/spotify.csv")
 
 #generate 1000 bootstrapped datasets
 set.seed(123)
@@ -23,19 +23,37 @@ for(i in 1:1000){
 #where we plot the smoothed density using the
 #mean, 2.5% quantile, and 97.5% quantile of the bandwidths.
 #This generates Figure 6 from the paper.
-plot(density(spotify$loudness, bw = mean(bootBands)),
-	ylim = c(0, 0.25),
-	lwd = 2,
-	xlab = "Loudness (dB)", main = "")
-lines(density(spotify$loudness,
-	bw = as.numeric(quantile(bootBands, prob = 0.025))),
-	col = "red", lty = 2)
-lines(density(spotify$loudness,
-	bw = as.numeric(quantile(bootBands, prob = 0.975))),
-	col = "blue", lty = 2)
-legend("topleft",
-	legend = c("Avg. Bandwidth",
-		"2.5% Quantile Bandwidth",
-		"97.5% Quantile Bandwidth"),
-	lty = c(1,2,2), lwd = c(2,1,1),
-	col = c("black", "red", "blue"))
+library(tidyverse)
+library(ggthemes)
+
+lineCols = c("Avg." = colorblind_pal()(3)[1],
+			"2.5% Quantile" = colorblind_pal()(3)[2],
+			"97.5% Quantile" = colorblind_pal()(3)[3])
+lineTypes = c("Avg." = 1,
+			"2.5% Quantile" = 2,
+			"97.5% Quantile" = 2)
+names(lineCols) = factor(names(lineCols),
+	levels = c("Avg.", "2.5% Quantile", "97.5% Quantile"))
+
+bandwidthPlot = ggplot(spotify, aes(loudness)) +
+	#average bandwidth
+	stat_density(bw = mean(bootBands),
+		geom = "line", position = "identity",
+		aes(color = "Avg.", linetype = "Avg.")) +
+	#lower 2.5% bandwidth
+	stat_density(bw = as.numeric(quantile(bootBands, prob = 0.025)),
+		geom = "line", position = "identity",
+		aes(color = "2.5% Quantile", linetype = "2.5% Quantile")) +
+	#upper 97.5% bandwidth
+	stat_density(bw = as.numeric(quantile(bootBands, prob = 0.975)),
+		geom = "line", position = "identity",
+		aes(color = "97.5% Quantile", linetype = "97.5% Quantile")) +
+	theme_light() +
+	labs(x = "Loudness (dB)", y = "Density") +
+	scale_colour_manual(name="Bandwidth Choice", values=lineCols,
+		limits = c("Avg.", "2.5% Quantile", "97.5% Quantile")) +
+	scale_linetype_manual(name="Bandwidth Choice", values=lineTypes,
+		limits = c("Avg.", "2.5% Quantile", "97.5% Quantile"))
+bandwidthPlot
+cowplot::save_plot("figs/bandwidthPlot.pdf",
+                   bandwidthPlot, ncol = 1, nrow = 1)

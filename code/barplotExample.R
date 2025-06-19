@@ -7,7 +7,9 @@
 #for any dataframe with (A, B, C) categories.
 getBarplot = function(n,
 	props = c(0.25, 0.35, 0.4),
-	displayCIs = FALSE, alpha = 0.05){
+	displayCIs = FALSE, adjustCIs = FALSE,
+	alpha = 0.05,
+	ylimMax = 0.6){
 	#first, check to make sure that
 	#each n*p is a whole number
 	#(such that it's a proper barplot)
@@ -24,51 +26,63 @@ getBarplot = function(n,
 		rep("A", n*propA),
 		rep("B", n*propB),
 		rep("C", n*propC)))
-	#compute CIs
-	ciQuant = qnorm(1-alpha/2)
-	propA.ci = c(
-		propA - ciQuant*sqrt( (propA*(1-propA))/n ),
-		propA + ciQuant*sqrt( (propA*(1-propA))/n )   )
-	propB.ci = c(
-		propB - ciQuant*sqrt( (propB*(1-propB))/n ),
-		propB + ciQuant*sqrt( (propB*(1-propB))/n )   )
-	propC.ci = c(
-		propC - ciQuant*sqrt( (propC*(1-propC))/n ),
-		propC + ciQuant*sqrt( (propC*(1-propC))/n )   )
+
+	#If the CIs are Bonferroni-adjusted,
+	#then adjust the alpha value
+	if(adjustCIs){alpha = alpha/3}
+	
+	#Calculate proportions and confidence intervals
+	data.summary = data %>%
+	  count(cat) %>%
+	  mutate(
+	    proportion = n / sum(n),
+	    n_total = sum(n),
+	    se = qnorm(1-alpha/2)*sqrt((proportion*(1 - proportion))/n_total),
+	    lower = proportion - se,
+	    upper = proportion + se)
 	
 	#create barplot
-	barplot(prop.table(table(data$cat)), col = "white",
-		main = "",
-		ylim = c(0, 0.65))
-	#add text with sample size and chi-squared p-value
-	text(x = 1, y = 0.6,
-		paste0("chi-squared test \n p-value = ",
-			round(chisq.test(table(data$cat))$p.value, digits = 2)),
-		cex = 1.5)
+	barplot = ggplot(data.summary, aes(x = cat, y = proportion)) +
+	  geom_col(fill = "white", color = "black") +
+	  theme_light() +
+	  theme(panel.grid.major.x = element_blank()) +
+	  ylim(0, ylimMax) +
+	  #add sample size and p-value from overall chi-squared test
+	  labs(x = "", y = "")
+	
 	#display CIs?
 	if(displayCIs){
-		segments(x0 = 0.7, x1 = 0.7,
-			y0 = propA.ci[1], y1 = propA.ci[2])
-		segments(x0 = 0.4, x1 = 1,
-			y0 = propA.ci[1], y1 = propA.ci[1])
-		segments(x0 = 0.4, x1 = 1,
-			y0 = propA.ci[2], y1 = propA.ci[2])
-
-		segments(x0 = 1.9, x1 = 1.9,
-			y0 = propB.ci[1], y1 = propB.ci[2])
-		segments(x0 = 1.6, x1 = 2.2,
-			y0 = propB.ci[1], y1 = propB.ci[1])
-		segments(x0 = 1.6, x1 = 2.2,
-			y0 = propB.ci[2], y1 = propB.ci[2])
-
-		segments(x0 = 3.1, x1 = 3.1,
-			y0 = propC.ci[1], y1 = propC.ci[2])
-		segments(x0 = 2.8, x1 = 3.4,
-			y0 = propC.ci[1], y1 = propC.ci[1])
-		segments(x0 = 2.8, x1 = 3.4,
-			y0 = propC.ci[2], y1 = propC.ci[2])
+		if(adjustCIs){
+			#if adjusted, add to title, and make CIs orange
+			barplot = barplot +
+			labs(title = paste0("n = ", n,
+	  		", p-value = ",
+	  		round(chisq.test(table(data$cat))$p.value, digits = 2),
+	  		", Adjusted CIs")) +
+			geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.5,
+				color = colorblind_pal()(2)[2])
+		} else{
+			#if unadjusted, add to title, and make CIs black
+			barplot = barplot +
+			labs(title = paste0("n = ", n,
+	  		", p-value = ",
+	  		round(chisq.test(table(data$cat))$p.value, digits = 2),
+	  		", Undjusted CIs")) +
+			geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.5,
+				color = colorblind_pal()(2)[1])
+		}
 	}
+	return(barplot)
 }
+
+#example plot
+library(tidyverse)
+library(ggthemes)
+
+barplot1 = getBarplot(n = 40,
+	props = c(0.25, 0.35, 0.4),
+	displayCIs = TRUE, adjustCIs = FALSE, alpha = 0.05)
+barplot1
 
 #Now we'll compute the significance
 #of chi-squared test as a function of sample size
@@ -109,50 +123,61 @@ for(n in n.vec){
 	ciAC.bonf[n/n.vec[1]] = diffAC + qnorm(1-(0.05/3)/2)*seAC
 }
 
-# CODE TO GENERATE PLOTS IN FIGURE 4 FROM PAPER
+# CODE TO GENERATE PLOTS IN FIGURE 5 FROM PAPER
 # 1) overall chi-squared test fails to reject,
 #    and all CIs overlap
-#(plot a in Figure 4)
-getBarplot(n = 40, props = c(0.25, 0.35, 0.4),
-	displayCIs = TRUE)
+#(plot a in Figure 5)
+barplot1 = getBarplot(n = 40, props = c(0.25, 0.35, 0.4),
+	displayCIs = TRUE, adjustCIs = FALSE, alpha = 0.05)
+barplot1
 #same plot, corrected for multiple testing
-#(plot d in Figure 4)
-getBarplot(n = 40, props = c(0.25, 0.35, 0.4),
-	displayCIs = TRUE, alpha = 0.05/3)
+#(plot d in Figure 5)
+barplot4 = getBarplot(n = 40, props = c(0.25, 0.35, 0.4),
+	displayCIs = TRUE, adjustCIs = TRUE, alpha = 0.05)
+barplot4
 #note that this CI fails to reject regardless of whether
 #one accounts for multiple testing
-ciAC[40/20]
-ciAC.bonf[40/20]
+ciAC[n.vec == 40]
+ciAC.bonf[n.vec == 40]
 
 # 2) overall chi-squared test fails to reject,
 #    all CIs overlap, and at least one pairwise test reject
-#(plot b in Figure 4)
-getBarplot(n = 120, props = c(0.25, 0.35, 0.4),
-	displayCIs = TRUE)
+#(plot b in Figure 5)
+barplot2 = getBarplot(n = 120, props = c(0.25, 0.35, 0.4),
+	displayCIs = TRUE, adjustCIs = FALSE, alpha = 0.05)
+barplot2
 #same plot, corrected for multiple testing
-#(plot e in Figure 4)
-getBarplot(n = 120, props = c(0.25, 0.35, 0.4),
-	displayCIs = TRUE, alpha = 0.05/3)
+#(plot e in Figure 5)
+barplot5 = getBarplot(n = 120, props = c(0.25, 0.35, 0.4),
+	displayCIs = TRUE, adjustCIs = TRUE, alpha = 0.05)
+barplot5
 #note that this CI rejects when NOT accounting for 
 #multiple testing, but otherwise fails to reject.
-ciAC[120/20]
-ciAC.bonf[120/20]
+ciAC[n.vec == 120]
+ciAC.bonf[n.vec == 120]
 
 # 3) overall chi-squared test rejects,
 #    and at least one pairwise test rejects.
-#(plot c in Figure 4)
-getBarplot(n = 200,
+#(plot c in Figure 5)
+barplot3 = getBarplot(n = 200,
 	props = c(0.25, 0.35, 0.40),
-	displayCIs = TRUE)
+	displayCIs = TRUE, adjustCIs = FALSE, alpha = 0.05)
+barplot3
 #the same plot, but corrected for multiple testing
-#(plot f in Figure 4)
-getBarplot(n = 200,
+#(plot f in Figure 5)
+barplot6 = getBarplot(n = 200,
 	props = c(0.25, 0.35, 0.40),
-	displayCIs = TRUE,
-	alpha = 0.05/3)
+	displayCIs = TRUE, adjustCIs = TRUE, alpha = 0.05)
+barplot6
 #note that this CI rejects regardless of whether
 #one accounts for multiple testing
-ciAC[200/20]
-ciAC.bonf[200/20]
+ciAC[n.vec == 200]
+ciAC.bonf[n.vec == 200]
+
+#Arrange all six plots in a grid
+library(patchwork)
+(barplot1 + barplot2 + barplot3)/(barplot4 + barplot5 + barplot6)
+
+
 
 

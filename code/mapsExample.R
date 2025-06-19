@@ -6,7 +6,7 @@ library(tidyverse)
 library(ggmap)
 
 #We'll consider the ACS data considered in the paper:
-acs = read.csv("https://raw.githubusercontent.com/zjbranson/315Fall2022/main/acs2015_county_data.csv")
+acs = read.csv("data/datasets for examples/acs2015.csv")
 
 #First we get border information for all states
 state.data = map_data("state")
