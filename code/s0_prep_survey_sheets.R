@@ -26,10 +26,6 @@ head(raw_survey_sheets$Universities)
 univ_survey <- raw_survey_sheets$Universities |>
   janitor::clean_names() |>
   mutate(type = "university") |>
-  # Drop the missing university name rows:
-  filter(!is.na(university),
-         # And drop the info for Monica row:
-         str_detect(university, "for Monica", negate = TRUE)) |>
   # Drop the notes columns:
   dplyr::select(-contains("notes"))
 
@@ -37,8 +33,6 @@ univ_survey <- raw_survey_sheets$Universities |>
 lib_arts_survey <- raw_survey_sheets$`Liberal Arts Colleges` |>
   janitor::clean_names() |>
   mutate(type = "liberal_arts") |>
-  filter(!is.na(university),
-         str_detect(university, "for Monica", negate = TRUE)) |>
   # Drop the notes columns:
   dplyr::select(-contains("notes"))
 

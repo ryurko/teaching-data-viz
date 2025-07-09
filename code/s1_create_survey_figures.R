@@ -316,12 +316,12 @@ print(courses_noTopics, n = 114)
 # More closely examining which courses
 # covered interactive graphics:
 print(subset(course_level_info[which(topicChecks$interactive == 1),],
-             select = c(name, dept)), n = 105)
+             select = c(name, dept)), n = 114)
 
 # More closely examining which courses
 # covered spatial data:
 print(subset(course_level_info[which(topicChecks$spatial == 1),],
-             select = c(name, dept)), n = 105)
+             select = c(name, dept)), n = 114)
 
 # Set-up a vector of topics 
 stat_topics <- c("hypothesis testing", "confidence intervals",
